@@ -122,3 +122,47 @@ Example1 <- c(T,F,T,T,F,T)
 base::sum(Example1) ## True Only
 length(Example1) - base::sum(Example1)
 
+##
+data("mtcars")
+df <- mtcars
+head(df)
+library(reshape2)
+library(dplyr)
+##Melting Data Frames
+df$carname <- base::rownames(df)
+dfMelted <- reshape2::melt(data = df ,
+                           id = c("carname","gear","cyl"),
+                           measure.vars = c("mpg","hp"))
+head(dfMelted) ## convert the measure vars to obs
+## Casting DataFrame
+castedDyl <- reshape2::dcast(data = dfMelted , formula = cyl ~ variable)
+castedDyl 
+
+castedDyl <- reshape2::dcast(data = dfMelted , formula = cyl ~variable ,fun.aggregate = median)
+castedDyl
+
+##Averaging values
+
+data("InsectSprays")
+df <- InsectSprays
+head(df)
+
+?base::tapply
+base::tapply(X = df$count , INDEX = df$spray , FUN = sum)
+
+## Another Way 
+splitINS = base::split(x = df$count ,f = df$spray)
+splitINS
+sprCounts = base::lapply(X = splitINS,FUN = sum)
+sprCounts
+
+
+## Merging Data
+fileUrl1 <- "https://dl.dropboxusercontent.com/u/7710864/data/reviews-apr29.csv"
+fileUrl2 <- "https://dl.dropboxusercontent.com/u/7710864/data/solutions-apr29.csv"
+download.file(url =fileUrl1 , destfile = ".\\csvFolder\\reviews.csv")
+download.file(url = fileUrl2 , destfile = ".\\csvFolder\\solutions.csv")
+reviews <- read.csv(".\\csvFolder\\reviews.csv")
+solution <- read.csv(".\\csvFolder\\solutions.csv")
+##link broken , but this is just Merging data
+##use plyr package
