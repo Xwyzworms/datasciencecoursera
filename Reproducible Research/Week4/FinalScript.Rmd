@@ -1,0 +1,126 @@
+---
+author: "Xwyzworm"
+output: pdf_document
+---
+## Introduction :
+
+The goal of the assignment is to explore the NOAA Storm Database and explore the effects of severe weather events on both population and economy.The database covers the time period between 1950 and November 2011.
+
+The following analysis investigates which types of severe Disasters are most harmful on:
+
+Health (injuries and fatalities)
+Property and crops (economic consequences)
+## My Software Environment 
+
+```{r}
+sessionInfo()
+
+```
+## Data Processing
+
+### Loading & reading data
+```{r}
+
+library(dplyr)
+library(plyr)
+library(ggplot2) 
+library(reshape2) 
+setwd("D:/Reproducible Research/Week4")
+#fileurl <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
+#download.file(url = fileurl , destfile = "DataSet/repdata_data_StormData.csv")
+
+stromdf <- read.csv("./DataSet/repdata_data_StormData.csv/repdata_data_StormData.csv")
+stromdf <- stromdf[,c("EVTYPE" , "FATALITIES","INJURIES","PROPDMG","PROPDMGEXP","CROPDMG","CROPDMGEXP")]
+```
+
+### Subsetting & Preprocessing Data
+This is important because there's alot things to be done , data is messy
+```{r}
+
+TotalGrouped <- subset(stromdf , EVTYPE != '?' & (FATALITIES > 0 | INJURIES > 0 | PROPDMG > 0 | CROPDMG > 0))
+
+TotalGrouped$PROPDMGEXP <- toupper(TotalGrouped$PROPDMGEXP)
+TotalGrouped$CROPDMGEXP <- toupper(TotalGrouped$CROPDMGEXP)
+## Convert the Exponent Variables
+Propdmgconv <- c("-" = 10^0, "+" = 10^0,
+                 "H" = 10^2, "K" = 10^3,
+                 "M" = 10^6, "B" = 10^9,
+                 "0" = 10^0, "1" = 10^1,
+                 "2" = 10^2, "3" = 10^3,
+                 "4" = 10^4, "5" = 10^5,
+                 "6" = 10^6, "7" = 10^7,
+                 "8" = 10^8 ,"9" = 10^9)
+Cropdmgconv <- c( 
+                 "?" = 10^0,"0" = 10^0,
+                 "K" = 10^3,"M" = 10^4,
+                 "B" = 10^9) 
+TotalGrouped$PROPDMGEXP[TotalGrouped$PROPDMGEXP == ""] <- 10^0
+TotalGrouped$CROPDMGEXP[TotalGrouped$CROPDMGEXP == ""] <- 10^0
+
+TotalGrouped$PROPDMGEXP <- revalue(TotalGrouped$PROPDMGEXP , Propdmgconv)
+TotalGrouped$CROPDMGEXP <- revalue(TotalGrouped$CROPDMGEXP , Cropdmgconv)
+
+
+```
+
+### Calculate Total Fatalities and Injuries then Melt the top10
+```{r}
+TotalGrouped %>% 
+        dplyr::group_by(EVTYPE) %>%
+        dplyr::summarise(FATALITIES = sum(FATALITIES),INJURIES = sum(INJURIES),
+                         TOTAL = sum(FATALITIES) + sum(INJURIES)) -> Totalaccident
+
+Totalaccident <- Totalaccident[order(-Totalaccident$FATALITIES),] # Sorting Values
+Top10 <- head(Totalaccident , n =10)
+Top10 <- reshape2::melt(data = Top10 , id.vars = c("EVTYPE") ,variable.name = "accident")
+
+
+```
+
+### Plot The top 10 Dangerous Disasters
+```{r}
+
+ggplot2::ggplot(data = Top10, aes(x = reorder(EVTYPE, -value) , y = value , fill = accident)) +
+        ggplot2::geom_bar(stat = "identity" , position = 'dodge') +
+        ggplot2::labs(x = "Disasters" , y = "Total Value" , title = "Top 10 Disasters causing Death") +
+        ggplot2::theme(axis.text.x = element_text(angle = 45 ,size = 7)) 
+
+```
+So From here we know that tornado make people get injuried the most,compare others.
+
+### Economic Consiquencies 
+### Calculate Total Prop & Crop Loss Then Melt it.
+
+```{r}
+OverallLoss <- TotalGrouped
+
+OverallLoss$proploss <- OverallLoss$PROPDMG * as.numeric(OverallLoss$PROPDMGEXP)
+OverallLoss$croploss <- OverallLoss$CROPDMG * as.numeric(OverallLoss$CROPDMGEXP)
+
+OverallLoss %>% 
+        dplyr::group_by(EVTYPE) %>%
+        dplyr::summarise(proplossTot = sum(proploss) ,
+                  CROPlossTot = sum(croploss) , 
+                  TotalLoss = sum(proplossTot) + sum(CROPlossTot))  -> OverallLoss
+
+OverallLoss <- OverallLoss[order(-OverallLoss$TotalLoss) , ] 
+Top10Loss <- head(OverallLoss , 10)
+Top10Loss <-reshape2::melt(data = Top10Loss , id.vars = c('EVTYPE'),variable.name = "Disasters")
+
+```
+
+### Plot The Top 10 Dangerous Disasters for Economic
+```{r}
+
+ggplot2::ggplot(data = Top10Loss , aes(x = reorder(EVTYPE , -value) , y =value ,fill = Disasters )) +
+        ggplot2::geom_bar(stat = "identity" , position = "dodge" ,) + 
+        ggplot2::labs(x = "Disasters" , y = "Total Value" , title = "Top 10 Disasters causing Big Loss")+
+        ggplot2::theme(axis.text.x = element_text(angle = 45 , size = 4))
+
+
+```
+
+## Result / Conclusion
+We see that tornadoes cause more fatalities and injuries in a rate that is significantly greater than the rest of Disasters. Tornadoes are most harmful to population health in this dataset.
+
+it is obvious that Flood is the most destructive weather events for economic consequences, as documented in the data.It's greatly impact economic consequences compare others disasters.
