@@ -1,0 +1,87 @@
+---
+title: "Untitled"
+output: html_document
+---
+
+Illustrate via simulation and associated explanatory text the properties of the distribution of the mean of 40 exponentials. You should
+
+1. Show the sample mean and compare it to the theoretical mean of the distribution.
+
+2. Show how variable the sample is (via variance) and compare it to the theoretical variance of the distribution.
+
+3. Show that the distribution is approximately normal.
+
+```{r}
+# Task 1
+library(ggplot2)
+library(moments)
+
+set.seed(42)
+
+lambda <- 0.2
+
+observation <- 40
+
+TotalSimulation <- 1000
+
+
+?replicate
+
+simulated_exponential_Dist <- replicate(TotalSimulation , rexp(n = 40 , rate = lambda))
+
+Simulated_means <- apply(simulated_exponential_Dist,MARGIN = 2 ,FUN = mean)
+Simulated_means
+
+sample_statistics_mean <- mean(Simulated_means)
+sample_statistics_mean #  4.986508
+
+theory_mean <- 1 / lambda
+theory_mean # 5
+
+
+# Let's Visualize it
+
+ggplot2::ggplot(data = as.data.frame(Simulated_means) ,aes(x = Simulated_means))+
+        ggplot2::geom_histogram(bins = 80,aes(y = ..density..)) +
+        ggplot2::geom_vline(aes(xintercept = sample_statistics_mean,col = "blue",)) +
+        ggplot2::geom_vline(aes(xintercept = theory_mean,col = "red",  )) + 
+        ggplot2::geom_density(col = "red") + 
+        ggplot2::labs(title = "Simulated Visualizations" , x = "means") 
+      
+
+paste("the analytics mean is " ,sample_statistics_mean , " the theoretical mean is 5. The center of sampling distribution of 40 exponentials is very close to the theoretical center of the distribution.")
+
+
+```
+
+
+```{r}
+
+# Task 2 
+
+#2. Show how variable the sample is (via variance) and compare it to the theoretical variance of  the distribution.
+
+
+StandardDeviationSimulated <- sd(Simulated_means)
+VarianceOfSimulated <- StandardDeviationSimulated ^ 2
+
+TheoreticalStandardDeviations <- 1 / lambda/sqrt(observation)
+
+VarianceOfTheoreticalStandardDeviations <- TheoreticalStandardDeviations ^2
+
+paste("Theoretical Variance : " , VarianceOfTheoreticalStandardDeviations , "Simulated Variance" , VarianceOfSimulated)
+
+# From here we know the distribution is nearly close same , but the true one is that the Simulated Variance
+
+```
+```{r}
+ggplot2::ggplot(data = as.data.frame(Simulated_means) ,aes(x = Simulated_means))+
+        ggplot2::geom_histogram(bins = 50,aes(y = ..density.. ),col = "black",fill="orange") +
+        ggplot2::geom_density() +
+        ggplot2::labs(title = paste("Simulated Visualizations Skewness :" ,moments::skewness(Simulated_means)), x = "means") 
+
+
+## Due To CLT and the N >= 30 we assumme this follow the normal distribution
+```
+
+
